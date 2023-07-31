@@ -1,0 +1,70 @@
+before:
+  hooks:
+    - go mod tidy
+
+builds:
+  - env:
+      - CGO_ENABLED=0
+    goarch:
+      - amd64
+      - arm64
+    goamd64:
+      - v1
+    goos:
+      - linux
+    main: ./cmd
+
+archives:
+  - format: tar.gz
+
+checksum:
+  name_template: "checksums.txt"
+
+changelog:
+  skip: false
+  use: github
+  sort: asc
+
+  groups:
+    - title: "Tests"
+      regexp: "^.*\\(tests?\\):.*$"
+      order: 0
+    - title: "Dependencies"
+      regexp: "^.*\\(deps\\):.*$"
+      order: 1
+    - title: "CI"
+      regexp: "^.*\\(ci\\):.*$"
+      order: 2
+    - title: "New Features"
+      regexp: "^feat(\\(.*\\))?:.*$"
+      order: 3
+    - title: "Bug Fixes"
+      regexp: "^fix(\\(.*\\))?:.*$"
+      order: 3
+    - title: "Linter"
+      regexp: "^.*linter.*$"
+      order: 4
+    - title: "Other"
+      order: 999
+
+  filters:
+    exclude:
+      - "^WIP:"
+      - Merge pull request
+      - Merge branch
+      - go mod tidy
+      - typo
+      - "^chore"
+
+snapshot:
+  name_template: "{{ .Tag }}-test"
+
+release:
+  name_template: "v{{ .Version }}"
+  #  draft: true
+  prerelease: auto
+
+milestones:
+  - close: true
+    fail_on_error: false
+    name_template: "{{ .Tag }}"

@@ -1,0 +1,11 @@
+roles/*
+!roles/.gitkeep
+
+/bin
+
+# Whitelist some files
+!.gitignore
+!README.md
+
+.code
+.idea
