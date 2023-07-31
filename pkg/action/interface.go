@@ -32,7 +32,7 @@ func getContextWithFlags(c *cli.Context) context.Context {
 
 	ctx = context.WithValue(ctx, "cli", c) //nolint:staticcheck // same
 
-	ctx = context.WithValue(ctx, "firstArg", c.Args().First())
-	ctx = context.WithValue(ctx, "allArgs", c.Args().Slice())
+	ctx = context.WithValue(ctx, "firstArg", c.Args().First()) //nolint:staticcheck // same
+	ctx = context.WithValue(ctx, "allArgs", c.Args().Slice())  //nolint:staticcheck // same
 	return ctx
 }

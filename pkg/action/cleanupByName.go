@@ -40,9 +40,9 @@ Images for deletion:
 )
 
 // Run is the main function for 'cleanup' command.
-func (d *CleanupByName) Run(ctx context.Context) error {
-	d.savedImages = make(map[string]images.Image, 0)
-	d.imagesForDeletion = make(map[string]images.Image, 0)
+func (c *CleanupByName) Run(ctx context.Context) error {
+	c.savedImages = make(map[string]images.Image, 0)
+	c.imagesForDeletion = make(map[string]images.Image, 0)
 	ao, err := openstack.AuthOptionsFromEnv()
 	if err != nil {
 		return err
@@ -71,19 +71,21 @@ func (d *CleanupByName) Run(ctx context.Context) error {
 		return err
 	}
 
-	log.Printf("Dry-run %t", d.dryRun)
+	log.Printf("Dry-run %t", c.dryRun)
 
-	d.buildLists(imageName, client, listOpts)
-
-	if !d.dryRun {
-		log.Printf("Running cleanup for %s", imageName)
-		d.cleanupImages(ctx, client)
+	if err = c.buildLists(imageName, client, listOpts); err != nil {
+		return err
 	}
 
-	return err
+	if !c.dryRun {
+		log.Printf("Running cleanup for %s", imageName)
+		return c.cleanupImages(ctx, client)
+	}
+
+	return nil
 }
 
-func (d *CleanupByName) buildLists(name string, client *gophercloud.ServiceClient, listOpts *images.ListOpts) error {
+func (c *CleanupByName) buildLists(name string, client *gophercloud.ServiceClient, listOpts *images.ListOpts) error {
 	allPages, err := images.List(client, *listOpts).AllPages()
 	if err != nil {
 		log.Error(err)
@@ -95,26 +97,26 @@ func (d *CleanupByName) buildLists(name string, client *gophercloud.ServiceClien
 		return nil
 	}
 
-	commits, err := gh.GetNCommitsFromHead(d.scanDepth)
+	commits, err := gh.GetNCommitsFromHead(c.scanDepth)
 	if err != nil {
 		return err
 	}
 
-	return d.filterImagesByCommitAndTime(imgs, commits)
+	return c.filterImagesByCommitAndTime(imgs, commits)
 }
 
-func (d *CleanupByName) filterImagesByCommitAndTime(imgs []images.Image, commits []string) error {
+func (c *CleanupByName) filterImagesByCommitAndTime(imgs []images.Image, commits []string) error {
 	latestImg := images.Image{}
 	currentCommitImg := images.Image{}
 
 	for step, i := range imgs {
 		if i.Visibility == "public" {
-			d.savedImages[i.ID] = i
+			c.savedImages[i.ID] = i
 			continue
 		}
 		if latestImg.ID == "" {
 			log.Debugf("latest image on step %d is %s", step, i.ID)
-			d.savedImages[i.ID] = i
+			c.savedImages[i.ID] = i
 			latestImg = i
 		}
 
@@ -125,23 +127,23 @@ func (d *CleanupByName) filterImagesByCommitAndTime(imgs []images.Image, commits
 				if currentCommitImg.ID == "" {
 					log.Debugf("latest image on step %d is %s", step, i.ID)
 					currentCommitImg = i
-					d.savedImages[i.ID] = i
+					c.savedImages[i.ID] = i
 					continue
 				}
 
 				if i.CreatedAt.After(currentCommitImg.CreatedAt) {
 					log.Debugln(i.ID, "after", currentCommitImg.ID)
-					delete(d.savedImages, currentCommitImg.ID)
-					d.imagesForDeletion[currentCommitImg.ID] = currentCommitImg
-					d.savedImages[i.ID] = i
+					delete(c.savedImages, currentCommitImg.ID)
+					c.imagesForDeletion[currentCommitImg.ID] = currentCommitImg
+					c.savedImages[i.ID] = i
 					currentCommitImg = i
 					log.Debugf("latest image on step %d is %s", step, i.ID)
 					continue
 				}
 				if i.CreatedAt.Before(currentCommitImg.CreatedAt) {
 					log.Debugln(i.ID, "before", currentCommitImg.ID)
-					delete(d.savedImages, i.ID)
-					d.imagesForDeletion[i.ID] = i
+					delete(c.savedImages, i.ID)
+					c.imagesForDeletion[i.ID] = i
 					log.Debugf("latest image on step %d is %s", step, currentCommitImg.ID)
 					continue
 				}
@@ -157,22 +159,22 @@ func (d *CleanupByName) filterImagesByCommitAndTime(imgs []images.Image, commits
 
 						if tagCommitIdx < currentCommitImgCommitTagIdx {
 							log.Debugln(i.ID, "after", currentCommitImg.ID)
-							delete(d.savedImages, currentCommitImg.ID)
-							d.imagesForDeletion[currentCommitImg.ID] = currentCommitImg
-							d.savedImages[i.ID] = i
+							delete(c.savedImages, currentCommitImg.ID)
+							c.imagesForDeletion[currentCommitImg.ID] = currentCommitImg
+							c.savedImages[i.ID] = i
 							currentCommitImg = i
 							log.Debugf("latest image on step %d is %s", step, i.ID)
 							continue
 						}
 						if tagCommitIdx > currentCommitImgCommitTagIdx {
 							log.Debugln(i.ID, "before", currentCommitImg.ID)
-							delete(d.savedImages, i.ID)
-							d.imagesForDeletion[i.ID] = i
+							delete(c.savedImages, i.ID)
+							c.imagesForDeletion[i.ID] = i
 							log.Debugf("latest image on step %d is %s", step, currentCommitImg.ID)
 							continue
 						}
 						if tagCommitIdx == currentCommitImgCommitTagIdx {
-							d.savedImages[i.ID] = i
+							c.savedImages[i.ID] = i
 							continue
 						}
 					}
@@ -182,36 +184,36 @@ func (d *CleanupByName) filterImagesByCommitAndTime(imgs []images.Image, commits
 
 		if i.CreatedAt.After(latestImg.CreatedAt) {
 			log.Debugln(i.ID, "after", latestImg.ID)
-			delete(d.savedImages, latestImg.ID)
-			d.imagesForDeletion[latestImg.ID] = latestImg
-			d.savedImages[i.ID] = i
+			delete(c.savedImages, latestImg.ID)
+			c.imagesForDeletion[latestImg.ID] = latestImg
+			c.savedImages[i.ID] = i
 			latestImg = i
 			log.Debugf("latest image on step %d is %s", step, i.ID)
 			continue
 		}
 		if i.CreatedAt.Before(latestImg.CreatedAt) {
 			log.Debugln(i.ID, "before", latestImg.ID)
-			delete(d.savedImages, i.ID)
-			d.imagesForDeletion[i.ID] = i
+			delete(c.savedImages, i.ID)
+			c.imagesForDeletion[i.ID] = i
 			log.Debugf("latest image on step %d is %s", step, latestImg.ID)
 			continue
 		}
 		if i.CreatedAt == latestImg.CreatedAt {
 			latestImg = i
-			d.savedImages[i.ID] = i
+			c.savedImages[i.ID] = i
 		}
 	}
 
 	val := make(map[string]interface{}, 6)
-	val["savedImages"] = d.savedImages
-	val["imagesForDeletion"] = d.imagesForDeletion
-	template.Must(template.New("Output").Parse(tplOutput)).Execute(os.Stdout, val)
+	val["savedImages"] = c.savedImages
+	val["imagesForDeletion"] = c.imagesForDeletion
+	template.Must(template.New("Output").Parse(tplOutput)).Execute(os.Stdout, val) //nolint:errcheck
 
 	return nil
 }
 
-func (d *CleanupByName) cleanupImages(ctx context.Context, client *gophercloud.ServiceClient) error {
-	for _, img := range d.imagesForDeletion {
+func (c *CleanupByName) cleanupImages(ctx context.Context, client *gophercloud.ServiceClient) error {
+	for _, img := range c.imagesForDeletion {
 		result := images.Delete(client, img.ID)
 		log.Printf("Delete image %s", img.ID)
 		if result.Err != nil {
@@ -223,20 +225,20 @@ func (d *CleanupByName) cleanupImages(ctx context.Context, client *gophercloud.S
 }
 
 // Cmd returns 'cleanup' *cli.Command.
-func (d *CleanupByName) Cmd() *cli.Command {
+func (c *CleanupByName) Cmd() *cli.Command {
 	return &cli.Command{
 		Name:   "cleanup",
 		Usage:  "Cleanup images by name",
-		Flags:  d.flags(),
-		Action: toCtx(d.Run),
+		Flags:  c.flags(),
+		Action: toCtx(c.Run),
 	}
 }
 
 // flags return flag set of CLI urfave.
-func (d *CleanupByName) flags() []cli.Flag {
+func (c *CleanupByName) flags() []cli.Flag {
 	self := []cli.Flag{
-		flagScanDepth(&d.scanDepth),
-		flagDryRun(&d.dryRun),
+		flagScanDepth(&c.scanDepth),
+		flagDryRun(&c.dryRun),
 	}
 
 	return self
