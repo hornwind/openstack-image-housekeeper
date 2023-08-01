@@ -3,7 +3,8 @@ before:
     - go mod tidy
 
 builds:
-  - env:
+  - binary: housekeeper
+    env:
       - CGO_ENABLED=0
     goarch:
       - amd64
