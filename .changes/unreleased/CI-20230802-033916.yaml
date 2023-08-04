@@ -1,0 +1,6 @@
+kind: CI
+body: Change artifact binary name
+time: 2023-08-02T03:39:16.477279351+04:00
+custom:
+  Author: Hornwind
+  Issue: ""

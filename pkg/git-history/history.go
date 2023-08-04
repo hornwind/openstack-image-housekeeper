@@ -4,10 +4,11 @@ import (
 	"os"
 
 	"github.com/go-git/go-git/v5"
-	log "github.com/sirupsen/logrus"
+	log "github.com/hornwind/openstack-image-keeper/pkg/logging"
 )
 
 func GetNCommitsFromHead(scanDepth int) ([]string, error) {
+	log := log.GetLogger()
 	var output []string
 
 	pwd, err := os.Getwd()
@@ -40,6 +41,7 @@ func GetNCommitsFromHead(scanDepth int) ([]string, error) {
 }
 
 func GetCurrentBranch() (string, error) {
+	log := log.GetLogger()
 	pwd, err := os.Getwd()
 	if err != nil {
 		log.Debug(err)
@@ -62,6 +64,7 @@ func GetCurrentBranch() (string, error) {
 }
 
 func GetTags(scanDepth int) ([]string, error) {
+	log := log.GetLogger()
 	var output []string
 
 	pwd, err := os.Getwd()
