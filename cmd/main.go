@@ -14,6 +14,7 @@ var commands = []*cli.Command{
 	new(action.List).Cmd(),
 	new(action.DeleteByID).Cmd(),
 	new(action.CleanupByName).Cmd(),
+	new(action.Publication).Cmd(),
 	version(),
 }
 

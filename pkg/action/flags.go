@@ -25,3 +25,23 @@ func flagDryRun(v *bool) *cli.BoolFlag {
 		Destination: v,
 	}
 }
+
+func flagProtected(v *bool) *cli.BoolFlag {
+	return &cli.BoolFlag{
+		Name:        "protected",
+		Usage:       "set image protected",
+		Value:       false,
+		EnvVars:     []string{"HOUSEKEEPER_SET_PROTECTED"},
+		Destination: v,
+	}
+}
+
+func flagHidden(v *bool) *cli.BoolFlag {
+	return &cli.BoolFlag{
+		Name:        "hidden",
+		Usage:       "set image hidden",
+		Value:       false,
+		EnvVars:     []string{"HOUSEKEEPER_SET_HIDDEN"},
+		Destination: v,
+	}
+}
