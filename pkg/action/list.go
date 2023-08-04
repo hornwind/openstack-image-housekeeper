@@ -8,14 +8,16 @@ import (
 	"github.com/gophercloud/gophercloud"
 	"github.com/gophercloud/gophercloud/openstack"
 	"github.com/gophercloud/gophercloud/openstack/imageservice/v2/images"
-	log "github.com/sirupsen/logrus"
+	log "github.com/hornwind/openstack-image-keeper/pkg/logging"
 	"github.com/urfave/cli/v2"
 )
 
 var _ Action = (*List)(nil)
 
 // List is a struct for running 'list' command.
-type List struct{}
+type List struct {
+	loglevel string
+}
 
 var listOutputTpl string = `Name: {{ .Name }}
 ID: {{ $.ID }}
@@ -38,6 +40,10 @@ Properties:
 
 // Run is the main function for 'list' command.
 func (l *List) Run(ctx context.Context) error {
+	log := log.GetLogger()
+	if err := log.SetLogLevel(l.loglevel); err != nil {
+		return err
+	}
 	ao, err := openstack.AuthOptionsFromEnv()
 	if err != nil {
 		return err
@@ -92,6 +98,16 @@ func (l *List) Cmd() *cli.Command {
 		Name:    "list",
 		Aliases: []string{"ls"},
 		Usage:   "List of available images",
+		Flags:   l.flags(),
 		Action:  toCtx(l.Run),
 	}
+}
+
+// flags return flag set of CLI urfave.
+func (l *List) flags() []cli.Flag {
+	self := []cli.Flag{
+		flagLogLevel(&l.loglevel),
+	}
+
+	return self
 }

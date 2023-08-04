@@ -10,7 +10,7 @@ import (
 	"github.com/gophercloud/gophercloud/openstack"
 	"github.com/gophercloud/gophercloud/openstack/imageservice/v2/images"
 	gh "github.com/hornwind/openstack-image-keeper/pkg/git-history"
-	log "github.com/sirupsen/logrus"
+	log "github.com/hornwind/openstack-image-keeper/pkg/logging"
 	"github.com/urfave/cli/v2"
 	"golang.org/x/exp/slices"
 )
@@ -21,6 +21,7 @@ var _ Action = (*CleanupByName)(nil)
 type CleanupByName struct {
 	savedImages       map[string]images.Image
 	imagesForDeletion map[string]images.Image
+	loglevel          string
 	scanDepth         int
 	dryRun            bool
 }
@@ -41,20 +42,13 @@ Images for deletion:
 
 // Run is the main function for 'cleanup' command.
 func (c *CleanupByName) Run(ctx context.Context) error {
+	log := log.GetLogger()
+	if err := log.SetLogLevel(c.loglevel); err != nil {
+		return err
+	}
+
 	c.savedImages = make(map[string]images.Image, 0)
 	c.imagesForDeletion = make(map[string]images.Image, 0)
-	ao, err := openstack.AuthOptionsFromEnv()
-	if err != nil {
-		return err
-	}
-	authOpts := &ao
-	provider, err := openstack.AuthenticatedClient(*authOpts)
-	if err != nil {
-		return err
-	}
-	eo := &gophercloud.EndpointOpts{
-		Region: os.Getenv("OS_REGION_NAME"),
-	}
 
 	imageName, ok := ctx.Value("firstArg").(string)
 	if !ok || imageName == "" {
@@ -66,26 +60,45 @@ func (c *CleanupByName) Run(ctx context.Context) error {
 		Owner: os.Getenv("OS_PROJECT_ID"),
 		Name:  imageName,
 	}
-	client, err := openstack.NewImageServiceV2(provider, *eo)
+
+	client, err := c.getImageServiceClient()
 	if err != nil {
 		return err
 	}
 
-	log.Printf("Dry-run %t", c.dryRun)
-
+	log.Infof("Dry-run %t", c.dryRun)
 	if err = c.buildLists(imageName, client, listOpts); err != nil {
 		return err
 	}
 
 	if !c.dryRun {
-		log.Printf("Running cleanup for %s", imageName)
+		log.Infof("Running cleanup for %s", imageName)
 		return c.cleanupImages(ctx, client)
 	}
 
 	return nil
 }
 
+func (c *CleanupByName) getImageServiceClient() (*gophercloud.ServiceClient, error) {
+	ao, err := openstack.AuthOptionsFromEnv()
+	if err != nil {
+		return nil, err
+	}
+	authOpts := &ao
+	provider, err := openstack.AuthenticatedClient(*authOpts)
+	if err != nil {
+		return nil, err
+	}
+	eo := &gophercloud.EndpointOpts{
+		Region: os.Getenv("OS_REGION_NAME"),
+	}
+
+	return openstack.NewImageServiceV2(provider, *eo)
+}
+
 func (c *CleanupByName) buildLists(name string, client *gophercloud.ServiceClient, listOpts *images.ListOpts) error {
+	log := log.GetLogger()
+
 	allPages, err := images.List(client, *listOpts).AllPages()
 	if err != nil {
 		log.Error(err)
@@ -106,6 +119,7 @@ func (c *CleanupByName) buildLists(name string, client *gophercloud.ServiceClien
 }
 
 func (c *CleanupByName) filterImagesByCommitAndTime(imgs []images.Image, commits []string) error {
+	log := log.GetLogger()
 	latestImg := images.Image{}
 	currentCommitImg := images.Image{}
 
@@ -213,9 +227,10 @@ func (c *CleanupByName) filterImagesByCommitAndTime(imgs []images.Image, commits
 }
 
 func (c *CleanupByName) cleanupImages(ctx context.Context, client *gophercloud.ServiceClient) error {
+	log := log.GetLogger()
 	for _, img := range c.imagesForDeletion {
 		result := images.Delete(client, img.ID)
-		log.Printf("Delete image %s", img.ID)
+		log.Infof("Delete image %s", img.ID)
 		if result.Err != nil {
 			return result.Err
 		}
@@ -239,6 +254,7 @@ func (c *CleanupByName) flags() []cli.Flag {
 	self := []cli.Flag{
 		flagScanDepth(&c.scanDepth),
 		flagDryRun(&c.dryRun),
+		flagLogLevel(&c.loglevel),
 	}
 
 	return self
