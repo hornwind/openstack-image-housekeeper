@@ -5,7 +5,7 @@ import (
 	"os"
 
 	"github.com/hornwind/openstack-image-keeper/pkg/action"
-	log "github.com/sirupsen/logrus"
+	log "github.com/hornwind/openstack-image-keeper/pkg/logging"
 	"github.com/urfave/cli/v2"
 )
 
@@ -19,6 +19,7 @@ var commands = []*cli.Command{
 }
 
 func main() {
+	log := log.GetLogger()
 	c := CreateApp()
 
 	defer recoverPanic()
@@ -29,11 +30,12 @@ func main() {
 }
 
 func recoverPanic() {
+	log := log.GetLogger()
 	if r := recover(); r != nil {
 		switch r.(type) {
 		case CommandNotFoundError:
 			log.Error(r)
-			log.Exit(127)
+			log.Logger.Exit(127)
 		default:
 			log.Panic(r)
 		}

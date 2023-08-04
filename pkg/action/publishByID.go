@@ -9,6 +9,7 @@ import (
 	"github.com/gophercloud/gophercloud"
 	"github.com/gophercloud/gophercloud/openstack"
 	"github.com/gophercloud/gophercloud/openstack/imageservice/v2/images"
+	log "github.com/hornwind/openstack-image-keeper/pkg/logging"
 	"github.com/urfave/cli/v2"
 )
 
@@ -17,6 +18,7 @@ type Publication struct {
 	provider  *gophercloud.ProviderClient
 	client    *gophercloud.ServiceClient
 	eo        *gophercloud.EndpointOpts
+	loglevel  string
 	dryRun    bool
 	protected bool
 	hidden    bool
@@ -37,6 +39,10 @@ These images will be private:
 )
 
 func (p *Publication) Run(ctx context.Context) error {
+	log := log.GetLogger()
+	if err := log.SetLogLevel(p.loglevel); err != nil {
+		return err
+	}
 	if err := p.configureClient(); err != nil {
 		return err
 	}
@@ -212,6 +218,7 @@ func (p *Publication) flags() []cli.Flag {
 		flagDryRun(&p.dryRun),
 		flagProtected(&p.protected),
 		flagHidden(&p.hidden),
+		flagLogLevel(&p.loglevel),
 	}
 
 	return self

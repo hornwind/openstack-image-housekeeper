@@ -5,6 +5,17 @@ import (
 )
 
 // flagScanDepth pass val to urfave flag.
+func flagLogLevel(v *string) *cli.StringFlag {
+	return &cli.StringFlag{
+		Name:        "loglevel",
+		Usage:       "configure log level",
+		Value:       "info",
+		EnvVars:     []string{"HOUSEKEEPER_LOG_LEVEL"},
+		Destination: v,
+	}
+}
+
+// flagScanDepth pass val to urfave flag.
 func flagScanDepth(v *int) *cli.IntFlag {
 	return &cli.IntFlag{
 		Name:        "scandepth",
@@ -26,6 +37,7 @@ func flagDryRun(v *bool) *cli.BoolFlag {
 	}
 }
 
+// flagDryRun pass val to urfave flag.
 func flagProtected(v *bool) *cli.BoolFlag {
 	return &cli.BoolFlag{
 		Name:        "protected",
@@ -36,6 +48,7 @@ func flagProtected(v *bool) *cli.BoolFlag {
 	}
 }
 
+// flagDryRun pass val to urfave flag.
 func flagHidden(v *bool) *cli.BoolFlag {
 	return &cli.BoolFlag{
 		Name:        "hidden",
