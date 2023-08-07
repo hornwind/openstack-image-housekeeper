@@ -1,15 +1,13 @@
 # housekeeper: A tool for automating the image creation pipeline for OpenStack.
 
 <!--TOC-->
-- [housekeeper: A tool for automating the image creation pipeline for OpenStack.](#housekeeper-a-tool-for-automating-the-image-creation-pipeline-for-openstack)
-  - [Installation](#installation)
-    - [Linux](#linux)
-  - [Usage](#usage)
-    - [List](#list)
-    - [Cleanup](#cleanup)
-    - [Delete](#delete)
-    - [Publish](#publish)
-
+- [Installation](#installation)
+  - [Linux](#linux)
+- [Usage](#usage)
+  - [List](#list)
+  - [Cleanup](#cleanup)
+  - [Delete](#delete)
+  - [Publish](#publish)
 <!--/TOC-->
 ## Installation
 ### Linux
