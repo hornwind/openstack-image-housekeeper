@@ -20,6 +20,16 @@ sudo chown root:root /usr/local/bin/housekeeper
 sudo chmod 0755 /usr/local/bin/housekeeper
 ```
 ## Usage
+Before starting, you need to export the following variables for [connecting](https://github.com/gophercloud/gophercloud/blob/v1.5.0/openstack/auth_env.go#L36) to OpenStack.\
+Example for [Selectel Cloud Platform](https://selectel.ru/en/services/cloud/servers/):
+```bash
+export OS_AUTH_URL='https://api.selvpc.ru/identity/v3'
+export OS_USERNAME='<Username>'
+export OS_PASSWORD='<Password>'
+export OS_PROJECT_ID='<Project_ID>'
+export OS_DOMAIN_NAME='<Account_Number>'
+export OS_REGION_NAME='ru-9'
+```
 ### List
 `housekeeper list` prints Name, ID, CreatedAt, Protected, Hidden and Tags of your private images. Supports setting values through environment variables.
 ```
